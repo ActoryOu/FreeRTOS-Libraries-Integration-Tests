@@ -49,14 +49,14 @@ type Argument struct {
 	Verbose    bool   `json:"verbose"`
 	Logging    bool   `json:"logging"`
 	Secure     bool   `json:"secure-connection"`
+    CertVerify bool   `json:"cert-verify"`
 	ServerPort string `json:"server-port"`
 	ServerCert string `json:"server-certificate-location"`
 	ServerKey  string `json:"server-key-location"`
 	Protocol   string `json:"server-protocol"`
 }
 
-func secureEcho(certPath string, keyPath string, port string, verbose bool) {
-    log.Println("Starting secureEcho")
+func secureEcho(certPath string, keyPath string, port string, certVerify bool, verbose bool) {
 
 	// load certificates
 	servertCert, err := tls.LoadX509KeyPair(certPath, keyPath)
