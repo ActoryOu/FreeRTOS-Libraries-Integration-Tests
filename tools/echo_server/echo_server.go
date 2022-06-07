@@ -49,13 +49,14 @@ type Argument struct {
 	Verbose    bool   `json:"verbose"`
 	Logging    bool   `json:"logging"`
 	Secure     bool   `json:"secure-connection"`
-	CertVerify bool   `json:"cert-verify"`
 	ServerPort string `json:"server-port"`
 	ServerCert string `json:"server-certificate-location"`
 	ServerKey  string `json:"server-key-location"`
+	Protocol   string `json:"server-protocol"`
 }
 
-func secureEcho(certPath string, keyPath string, port string, certVerify bool, verbose bool) {
+func secureEcho(certPath string, keyPath string, port string, verbose bool) {
+    log.Println("Starting secureEcho")
 
 	// load certificates
 	servertCert, err := tls.LoadX509KeyPair(certPath, keyPath)
@@ -71,18 +72,11 @@ func secureEcho(certPath string, keyPath string, port string, certVerify bool, v
 	serverCAPool := x509.NewCertPool()
 	serverCAPool.AppendCertsFromPEM(serverCA)
 
-    var clientAuth tls.ClientAuthType 
-    if certVerify {
-        clientAuth = tls.RequireAndVerifyClientCert
-    } else {
-        clientAuth = tls.RequireAnyClientCert
-    }
-
 	//Configure TLS
 	tlsConfig := tls.Config{Certificates: []tls.Certificate{servertCert},
 		MinVersion: tls.VersionTLS12,
 		RootCAs:    serverCAPool,
-        ClientAuth: clientAuth,
+		ClientAuth: tls.RequireAndVerifyClientCert,
 		ClientCAs:  serverCAPool,
 		// Cipher suites supported by AWS IoT Core. Note this is the intersection of the set
 		// of cipher suites supported by GO and by AWS IoT Core.
@@ -142,6 +136,45 @@ func echoServerThread(port string, tlsConfig *tls.Config, verbose bool) {
 	}
 }
 
+func echoServerUdpThread(port string, verbose bool) {
+	// listen on all interfaces
+	var err error
+
+	echoServer, err := net.ListenPacket("udp", ":"+port)
+
+	if err != nil {
+		log.Fatalf("While trying to listen for a connection an error occurred %s.", err)
+	} else {
+		defer echoServer.Close()
+        log.Println("Opening UDP server listening to port " + port)
+	}
+
+	for {
+        buffer := make([]byte, 4096)
+        n, addr, readErr := echoServer.ReadFrom(buffer)
+        if readErr != nil {
+			if readErr != io.EOF {
+				log.Printf("Error %s while reading data. Expected an EOF to signal end of connection", readErr)
+			}
+        } else{
+			log.Printf("Read %d bytes.", n)
+			if verbose {
+				hexStr := hex.EncodeToString( buffer[:n] )
+				log.Printf("Hex message:\n%s", hexStr)
+			}
+        }
+
+        log.Printf("Remote address: %v.", addr)
+
+        n, writeErr := echoServer.WriteTo(buffer[0:n], addr)
+        if writeErr != nil {
+            log.Printf("Failed to send data with error: %s ", writeErr)
+        } else {
+            log.Printf("Successfully echoed back %d bytes.", n)
+        }
+	}
+}
+
 func readWrite(connection net.Conn, verbose bool) {
 	defer connection.Close()
 	buffer := make([]byte, 4096)
@@ -179,11 +212,15 @@ func readWrite(connection net.Conn, verbose bool) {
 }
 
 func startup(config Argument) {
-	log.Println("Starting TCP Echo application...")
-	if config.Secure {
-		secureEcho(config.ServerCert, config.ServerKey, config.ServerPort, config.CertVerify, config.Verbose)
-	}
-	echoServerThread(config.ServerPort, nil, config.Verbose)
+    if config.Protocol == "udp" {
+        echoServerUdpThread(config.ServerPort, config.Verbose)
+    } else {
+        log.Println("Starting TCP Echo application...")
+        if config.Secure {
+		    secureEcho(config.ServerCert, config.ServerKey, config.ServerPort, config.Verbose)
+	    }
+	    echoServerThread(config.ServerPort, nil, config.Verbose)
+    }
 }
 
 func logSetup() {
