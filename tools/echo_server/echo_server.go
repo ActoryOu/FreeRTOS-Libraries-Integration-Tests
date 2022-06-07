@@ -72,11 +72,18 @@ func secureEcho(certPath string, keyPath string, port string, verbose bool) {
 	serverCAPool := x509.NewCertPool()
 	serverCAPool.AppendCertsFromPEM(serverCA)
 
+    var clientAuth tls.ClientAuthType 
+    if certVerify {
+        clientAuth = tls.RequireAndVerifyClientCert
+    } else {
+        clientAuth = tls.RequireAnyClientCert
+    }
+
 	//Configure TLS
 	tlsConfig := tls.Config{Certificates: []tls.Certificate{servertCert},
 		MinVersion: tls.VersionTLS12,
 		RootCAs:    serverCAPool,
-		ClientAuth: tls.RequireAndVerifyClientCert,
+        ClientAuth: clientAuth,
 		ClientCAs:  serverCAPool,
 		// Cipher suites supported by AWS IoT Core. Note this is the intersection of the set
 		// of cipher suites supported by GO and by AWS IoT Core.
