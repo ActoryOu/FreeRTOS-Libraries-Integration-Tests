@@ -29,22 +29,6 @@
 #define TEST_PARAM_CONFIG_H
 
 /**
- * @brief Backward compatible for coreMQTT version
- * @note Define this if your coreMQTT version is less than or equal to v1.2.0.
- *       Get it from coreMQTT/source/include/core_mqtt.h
- *
- * #define MQTT_TEST_USE_CORE_MQTT_V_1_2_0
- */
-
-/**
- * @brief Backward compatible for OTA version
- * @note Define this if your OTA version is less than or equal to v3.3.0.
- *       Get it from ota-for-aws-iot-embedded-sdk/source/include/ota.h
- *
- * #define OTA_PAL_TEST_USE_OTA_V_3_3_0
- */
-
-/**
  * @brief Configuration that indicates if the device should generate a key pair.
  *
  * @note When FORCE_GENERATE_NEW_KEY_PAIR is set to 1, the device should generate
@@ -78,7 +62,7 @@
  * @brief Network buffer size specified in bytes. Must be large enough to hold the maximum
  * anticipated MQTT payload.
  *
- * #define MQTT_TEST_NETWORK_BUFFER_SIZE			"insert here."
+ * #define MQTT_TEST_NETWORK_BUFFER_SIZE			(5000)
  */
 
 /**
