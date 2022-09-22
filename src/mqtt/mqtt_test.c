@@ -33,6 +33,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
 #include "unity.h"
